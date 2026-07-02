@@ -1,9 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { Bell, Menu, Search } from "lucide-react";
+import { Menu, Search } from "lucide-react";
 
 import { Brand } from "@/components/shared/brand";
+import {
+  NotificationBell,
+  type BellNotification,
+} from "@/components/shared/notification-bell";
 import { SidebarNav } from "@/components/shared/sidebar-nav";
 import { UserMenu } from "@/components/shared/user-menu";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -17,8 +21,12 @@ import {
 
 export function AppTopbar({
   user,
+  notifications,
+  unread,
 }: {
   user: { name?: string | null; email?: string | null };
+  notifications: BellNotification[];
+  unread: number;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -60,9 +68,7 @@ export function AppTopbar({
       </button>
 
       <div className="ml-auto flex items-center gap-1">
-        <Button variant="ghost" size="icon" aria-label="Notifications">
-          <Bell className="size-5" />
-        </Button>
+        <NotificationBell items={notifications} unread={unread} />
         <ThemeToggle />
         <UserMenu name={user.name} email={user.email} />
       </div>

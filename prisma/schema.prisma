@@ -435,6 +435,9 @@ model Notification {
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  // Dedupe guard: at most one notification of a given type per entity.
+  // NULL entityIds are distinct in PG, so SYSTEM notices are unaffected.
+  @@unique([userId, type, entityType, entityId])
   @@index([userId, readAt])
   @@index([userId, createdAt])
   @@index([scheduledFor])

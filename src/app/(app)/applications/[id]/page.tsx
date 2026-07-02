@@ -6,6 +6,7 @@ import { ArrowLeft, ExternalLink, Pencil } from "lucide-react";
 import { ApplicationForm } from "@/components/applications/application-form";
 import { ContactsSection } from "@/components/applications/contacts-section";
 import { NotesTab } from "@/components/applications/notes-tab";
+import { InterviewsTab } from "@/components/interviews/interviews-tab";
 import { PriorityBadge } from "@/components/applications/priority-badge";
 import { StatusPill } from "@/components/applications/status-pill";
 import { EmptyState } from "@/components/shared/empty-state";
@@ -156,29 +157,7 @@ export default async function ApplicationDetailPage({
         </TabsContent>
 
         <TabsContent value="interviews" className="mt-4">
-          {app.interviews.length === 0 ? (
-            <EmptyState
-              title="No interviews scheduled"
-              description="Interview scheduling and calendar sync arrive in the next milestone (M3)."
-            />
-          ) : (
-            <ul className="space-y-2">
-              {app.interviews.map((iv) => (
-                <li
-                  key={iv.id}
-                  className="flex items-center justify-between rounded-lg border p-3 text-sm"
-                >
-                  <span className="font-medium">
-                    {iv.type.replaceAll("_", " ")}
-                  </span>
-                  <span className="text-muted-foreground">
-                    {formatDate(iv.scheduledAt)}
-                  </span>
-                  <Badge variant="secondary">{iv.status}</Badge>
-                </li>
-              ))}
-            </ul>
-          )}
+          <InterviewsTab applicationId={app.id} interviews={app.interviews} />
         </TabsContent>
 
         <TabsContent value="ai" className="mt-4">
