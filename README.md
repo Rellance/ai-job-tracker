@@ -129,7 +129,7 @@ URL-synced search / filters / sorting / pagination, and a detail page with Overv
 - [x] **M0 — Foundation** — scaffold, Prisma schema + migrations + seed, design tokens, app shell, Docker, CI
 - [x] **M1 — Authentication** — register / login / logout, password reset, protected routes, security headers
 - [x] **M2 — Applications & Notes** — CRUD, URL-synced list, detail tabs, notes, contacts, unit tests
-- [ ] **M3 — Board, Calendar, Dashboard** _(in progress — board ✅, dashboard ✅, calendar ⏳)_
+- [x] **M3 — Board, Calendar, Dashboard** — kanban dnd, calendar + interview scheduling, notification bell with reminders, analytics dashboard
 - [ ] **M4 — AI Workspace** — JD analyzer, resume gap, match score, cover letters (streaming), interview prep; BullMQ worker, resume upload + parsing
 - [ ] **M5 — Billing & Hardening** — Stripe test-mode, rate limiting, Sentry, a11y pass, E2E suite
 - [ ] **M6 — Ship** — production deploy guide, final polish
