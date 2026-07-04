@@ -3,14 +3,13 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, ExternalLink, Pencil } from "lucide-react";
 
+import { InsightsTab } from "@/components/ai/insights-tab";
 import { ApplicationForm } from "@/components/applications/application-form";
 import { ContactsSection } from "@/components/applications/contacts-section";
 import { NotesTab } from "@/components/applications/notes-tab";
 import { InterviewsTab } from "@/components/interviews/interviews-tab";
 import { PriorityBadge } from "@/components/applications/priority-badge";
 import { StatusPill } from "@/components/applications/status-pill";
-import { EmptyState } from "@/components/shared/empty-state";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -161,26 +160,7 @@ export default async function ApplicationDetailPage({
         </TabsContent>
 
         <TabsContent value="ai" className="mt-4">
-          {app.aiArtifacts.length === 0 ? (
-            <EmptyState
-              title="No AI insights yet"
-              description="The AI Workspace (JD analysis, resume gap, cover letters, interview prep) arrives in M4."
-            />
-          ) : (
-            <ul className="space-y-2">
-              {app.aiArtifacts.map((a) => (
-                <li
-                  key={a.id}
-                  className="flex items-center justify-between rounded-lg border p-3 text-sm"
-                >
-                  <span className="font-medium">
-                    {a.kind.replaceAll("_", " ")}
-                  </span>
-                  <Badge variant="secondary">{a.status}</Badge>
-                </li>
-              ))}
-            </ul>
-          )}
+          <InsightsTab applicationId={app.id} artifacts={app.aiArtifacts} />
         </TabsContent>
       </Tabs>
     </div>
