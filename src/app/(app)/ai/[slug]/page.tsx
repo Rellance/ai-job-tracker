@@ -31,7 +31,7 @@ export default async function AiToolPage({
   const tool = toolBySlug(slug);
   if (!tool) notFound();
 
-  const [applications, prefillApp] = await Promise.all([
+  const [applications, prefillApp, resumes] = await Promise.all([
     db.application.findMany({
       where: { userId },
       select: { id: true, company: true, title: true },
@@ -43,6 +43,11 @@ export default async function AiToolPage({
           select: { id: true, jobDescription: true },
         })
       : null,
+    db.resume.findMany({
+      where: { userId, parsedText: { not: null } },
+      select: { id: true, label: true, parsedText: true, isDefault: true },
+      orderBy: [{ isDefault: "desc" }, { createdAt: "desc" }],
+    }),
   ]);
 
   return (
@@ -72,6 +77,12 @@ export default async function AiToolPage({
         needsResume={NEEDS_RESUME.includes(tool.kind)}
         hasTone={tool.kind === "COVER_LETTER"}
         applications={applications}
+        savedResumes={resumes.map((r) => ({
+          id: r.id,
+          label: r.label,
+          text: r.parsedText ?? "",
+          isDefault: r.isDefault,
+        }))}
         initialJobDescription={prefillApp?.jobDescription ?? undefined}
         initialApplicationId={prefillApp?.id}
       />

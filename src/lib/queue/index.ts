@@ -10,6 +10,7 @@ import { env } from "@/lib/env";
 const globalForQueue = globalThis as unknown as {
   redis?: IORedis;
   aiRunsQueue?: Queue;
+  resumeParseQueue?: Queue;
 };
 
 export function redisConnection(): IORedis {
@@ -23,20 +24,36 @@ export function redisConnection(): IORedis {
 }
 
 export const AI_RUNS_QUEUE = "ai-runs";
+export const RESUME_PARSE_QUEUE = "resume-parse";
+export const REMINDERS_QUEUE = "reminders";
+
+const defaultJobOptions = {
+  attempts: 2,
+  backoff: { type: "exponential", delay: 3000 },
+  removeOnComplete: 100,
+  removeOnFail: 500,
+} as const;
 
 export function aiRunsQueue(): Queue {
   globalForQueue.aiRunsQueue ??= new Queue(AI_RUNS_QUEUE, {
     connection: redisConnection(),
-    defaultJobOptions: {
-      attempts: 2,
-      backoff: { type: "exponential", delay: 3000 },
-      removeOnComplete: 100,
-      removeOnFail: 500,
-    },
+    defaultJobOptions,
   });
   return globalForQueue.aiRunsQueue;
 }
 
 export async function enqueueAiRun(artifactId: string) {
   await aiRunsQueue().add("run", { artifactId });
+}
+
+export function resumeParseQueue(): Queue {
+  globalForQueue.resumeParseQueue ??= new Queue(RESUME_PARSE_QUEUE, {
+    connection: redisConnection(),
+    defaultJobOptions: { ...defaultJobOptions, attempts: 3 },
+  });
+  return globalForQueue.resumeParseQueue;
+}
+
+export async function enqueueResumeParse(resumeId: string) {
+  await resumeParseQueue().add("parse", { resumeId });
 }

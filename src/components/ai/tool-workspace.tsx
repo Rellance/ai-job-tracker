@@ -21,6 +21,13 @@ import { Textarea } from "@/components/ui/textarea";
 
 type ApplicationOption = { id: string; company: string; title: string };
 
+type SavedResume = {
+  id: string;
+  label: string;
+  text: string;
+  isDefault: boolean;
+};
+
 type Artifact = {
   id: string;
   kind: string;
@@ -47,6 +54,7 @@ export function ToolWorkspace({
   needsResume,
   hasTone,
   applications,
+  savedResumes = [],
   initialJobDescription,
   initialApplicationId,
 }: {
@@ -57,6 +65,7 @@ export function ToolWorkspace({
   needsResume: boolean;
   hasTone?: boolean;
   applications: ApplicationOption[];
+  savedResumes?: SavedResume[];
   initialJobDescription?: string;
   initialApplicationId?: string;
 }) {
@@ -169,11 +178,37 @@ export function ToolWorkspace({
           )}
           {needsResume && (
             <div className="space-y-2">
-              <Label htmlFor="resume">Resume text</Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="resume">Resume text</Label>
+                {savedResumes.length > 0 && (
+                  <Select
+                    value={null}
+                    onValueChange={(v) => {
+                      const saved = savedResumes.find((r) => r.id === v);
+                      if (saved) setResume(saved.text);
+                    }}
+                    items={savedResumes.map((r) => ({
+                      value: r.id,
+                      label: r.isDefault ? `${r.label} ★` : r.label,
+                    }))}
+                  >
+                    <SelectTrigger size="sm" className="w-[180px]">
+                      <SelectValue placeholder="Use saved resume…" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {savedResumes.map((r) => (
+                        <SelectItem key={r.id} value={r.id}>
+                          {r.isDefault ? `${r.label} ★` : r.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
               <Textarea
                 id="resume"
                 rows={10}
-                placeholder="Paste your resume as plain text…"
+                placeholder="Paste your resume as plain text — or pick a saved one above…"
                 value={resume}
                 onChange={(e) => setResume(e.target.value)}
               />

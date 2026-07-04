@@ -4,16 +4,16 @@ import { INTERVIEW_TYPE_LABEL } from "@/lib/validations/interview";
 /**
  * Generates due interview reminders as in-app notifications.
  *
- * NOTE (M3 interim): this runs opportunistically when notifications are
- * loaded. In M4 it moves to the BullMQ repeatable `reminders` job in the
- * worker (System Design §5) — same logic, push instead of pull.
- * Idempotent: one REMINDER notification per interview.
+ * Primary path: the BullMQ repeatable `reminders` job in the worker calls
+ * this without a userId (global scan, System Design §5). The per-user call
+ * on notification load is kept as an idempotent fallback so reminders still
+ * work when the worker isn't running (e.g. `npm run dev` alone).
  */
-export async function generateDueReminders(userId: string) {
+export async function generateDueReminders(userId?: string) {
   const now = new Date();
   const due = await db.interview.findMany({
     where: {
-      userId,
+      ...(userId ? { userId } : {}),
       status: "SCHEDULED",
       reminderAt: { lte: now },
       scheduledAt: { gte: now },
@@ -24,7 +24,6 @@ export async function generateDueReminders(userId: string) {
 
   const existing = await db.notification.findMany({
     where: {
-      userId,
       type: "REMINDER",
       entityType: "Interview",
       entityId: { in: due.map((d) => d.id) },
@@ -39,7 +38,7 @@ export async function generateDueReminders(userId: string) {
   await db.notification.createMany({
     skipDuplicates: true, // + DB unique constraint guards concurrent renders
     data: fresh.map((iv) => ({
-      userId,
+      userId: iv.userId, // reminder goes to the interview's owner
       type: "REMINDER" as const,
       title: `Upcoming: ${INTERVIEW_TYPE_LABEL[iv.type]} — ${iv.application.company}`,
       body: iv.scheduledAt.toLocaleString("en-US", {

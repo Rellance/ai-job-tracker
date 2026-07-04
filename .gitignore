@@ -43,3 +43,6 @@ next-env.d.ts
 
 # claude local tooling
 .claude/
+
+# local file storage (dev)
+.data/

@@ -1,21 +1,26 @@
 import type { Metadata } from "next";
-import { FileText } from "lucide-react";
 
-import { EmptyState } from "@/components/shared/empty-state";
+import { ResumesManager } from "@/components/resumes/resumes-manager";
+import { requireUserId } from "@/lib/auth/session";
+import { listResumes } from "@/lib/services/resume";
 
 export const metadata: Metadata = { title: "Resumes" };
 
-export default function ResumesPage() {
+export default async function ResumesPage() {
+  const userId = await requireUserId();
+  const resumes = await listResumes(userId);
+
   return (
     <div className="space-y-6">
-      <h1 className="font-heading text-2xl font-semibold tracking-tight">
-        Resumes
-      </h1>
-      <EmptyState
-        icon={FileText}
-        title="Resume management coming in M4"
-        description="Upload multiple resume versions and use them across AI tools."
-      />
+      <div>
+        <h1 className="font-heading text-2xl font-semibold tracking-tight">
+          Resumes
+        </h1>
+        <p className="text-muted-foreground text-sm">
+          Keep versions of your resume — AI tools use the extracted text.
+        </p>
+      </div>
+      <ResumesManager resumes={resumes} />
     </div>
   );
 }
