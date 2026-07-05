@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { toolBySlug } from "@/lib/ai/schemas";
 import { enqueueAiRun } from "@/lib/queue";
+import { rateLimit, tooManyRequests } from "@/lib/rate-limit";
 import { createOrReuseArtifact } from "@/lib/services/aiArtifact";
 import { getQuota } from "@/lib/services/quota";
 
@@ -22,6 +23,10 @@ export async function POST(
     );
   }
   const userId = session.user.id;
+
+  // Burst protection on top of the monthly quota (System Design §9)
+  const rl = await rateLimit(`ai:${userId}`, 10, 60);
+  if (!rl.allowed) return tooManyRequests(rl.retryAfterSec);
 
   const { tool: slug } = await params;
   const tool = toolBySlug(slug);

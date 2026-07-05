@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { auth } from "@/auth";
 import { enqueueResumeParse } from "@/lib/queue";
+import { rateLimit, tooManyRequests } from "@/lib/rate-limit";
 import {
   createResume,
   RESUME_MAX_BYTES,
@@ -18,6 +19,9 @@ export async function POST(req: Request) {
       { status: 401 },
     );
   }
+
+  const rl = await rateLimit(`upload:${session.user.id}`, 6, 60);
+  if (!rl.allowed) return tooManyRequests(rl.retryAfterSec);
 
   const form = await req.formData().catch(() => null);
   const file = form?.get("file");

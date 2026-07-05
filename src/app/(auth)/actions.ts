@@ -1,5 +1,7 @@
 "use server";
 
+import { headers } from "next/headers";
+
 import { AuthError } from "next-auth";
 
 import { auth, signIn, signOut } from "@/auth";
@@ -8,6 +10,7 @@ import { generateResetToken, hashToken } from "@/lib/auth/tokens";
 import { db } from "@/lib/db";
 import { sendPasswordResetEmail } from "@/lib/email";
 import { env } from "@/lib/env";
+import { rateLimit } from "@/lib/rate-limit";
 import {
   forgotPasswordSchema,
   loginSchema,
@@ -21,7 +24,17 @@ import {
 
 type Result = { error?: string; success?: string } | void;
 
+async function clientIp(): Promise<string> {
+  const h = await headers();
+  return h.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "local";
+}
+
 export async function registerAction(values: RegisterInput): Promise<Result> {
+  const rl = await rateLimit(`register:${await clientIp()}`, 5, 600);
+  if (!rl.allowed) {
+    return { error: "Too many sign-up attempts — try again in a few minutes." };
+  }
+
   const parsed = registerSchema.safeParse(values);
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Invalid input" };
@@ -74,6 +87,11 @@ export async function loginAction(values: LoginInput): Promise<Result> {
 export async function forgotPasswordAction(
   values: ForgotPasswordInput,
 ): Promise<Result> {
+  const rl = await rateLimit(`forgot:${await clientIp()}`, 5, 600);
+  if (!rl.allowed) {
+    return { error: "Too many reset requests — try again in a few minutes." };
+  }
+
   const parsed = forgotPasswordSchema.safeParse(values);
   if (!parsed.success) {
     return { error: "Enter a valid email" };
