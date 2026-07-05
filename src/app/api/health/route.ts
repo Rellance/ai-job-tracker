@@ -20,7 +20,8 @@ export async function GET() {
 
   if (env.REDIS_URL) {
     try {
-      checks.redis = (await redisConnection().ping()) === "PONG" ? "ok" : "fail";
+      checks.redis =
+        (await redisConnection().ping()) === "PONG" ? "ok" : "fail";
     } catch {
       checks.redis = "fail";
     }

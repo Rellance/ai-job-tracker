@@ -57,10 +57,7 @@ export default async function SettingsPage() {
         </TabsList>
 
         <TabsContent value="profile" className="mt-4">
-          <ProfileForm
-            initialName={dbUser.name ?? ""}
-            email={dbUser.email}
-          />
+          <ProfileForm initialName={dbUser.name ?? ""} email={dbUser.email} />
         </TabsContent>
 
         <TabsContent value="security" className="mt-4">
