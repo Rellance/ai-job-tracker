@@ -1,30 +1,36 @@
 import type { Metadata } from "next";
-import { CreditCard } from "lucide-react";
+import { redirect } from "next/navigation";
 
 import { ActivityFeed } from "@/components/dashboard/activity-feed";
+import { BillingPanel } from "@/components/settings/billing-panel";
 import {
   ChangePasswordForm,
   ProfileForm,
 } from "@/components/settings/settings-forms";
-import { Badge } from "@/components/ui/badge";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { requireUser } from "@/lib/auth/session";
+import { confirmCheckoutSession } from "@/lib/billing";
 import { db } from "@/lib/db";
+import { env } from "@/lib/env";
 import { getQuota } from "@/lib/services/quota";
 
 export const metadata: Metadata = { title: "Settings" };
 
-export default async function SettingsPage() {
+export default async function SettingsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ session_id?: string }>;
+}) {
   const user = await requireUser();
-  const [quota, events, dbUser] = await Promise.all([
+  const { session_id: sessionId } = await searchParams;
+
+  // Back from Stripe Checkout: verify + sync, then clean the URL.
+  if (sessionId) {
+    await confirmCheckoutSession(user.id, sessionId).catch(() => false);
+    redirect("/settings?upgraded=1");
+  }
+
+  const [quota, events, dbUser, subscription] = await Promise.all([
     getQuota(user.id),
     db.activityEvent.findMany({
       where: { userId: user.id },
@@ -35,6 +41,7 @@ export default async function SettingsPage() {
       where: { id: user.id },
       select: { name: true, email: true },
     }),
+    db.subscription.findUnique({ where: { userId: user.id } }),
   ]);
 
   return (
@@ -65,39 +72,16 @@ export default async function SettingsPage() {
         </TabsContent>
 
         <TabsContent value="billing" className="mt-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-base">
-                <CreditCard className="size-4" />
-                Plan & usage
-              </CardTitle>
-              <CardDescription>
-                Stripe checkout (test-mode) lands later in M5 — usage tracking
-                is already live.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center gap-2">
-                <span className="text-sm">Current plan:</span>
-                <Badge>{quota.plan}</Badge>
-              </div>
-              {quota.limit !== null ? (
-                <div className="max-w-sm space-y-1.5">
-                  <div className="text-muted-foreground flex justify-between text-xs">
-                    <span>AI actions this month</span>
-                    <span className="tabular-nums">
-                      {quota.used}/{quota.limit}
-                    </span>
-                  </div>
-                  <Progress value={(quota.used / quota.limit) * 100} />
-                </div>
-              ) : (
-                <p className="text-muted-foreground text-sm">
-                  Unlimited AI actions.
-                </p>
-              )}
-            </CardContent>
-          </Card>
+          <BillingPanel
+            plan={quota.plan}
+            used={quota.used}
+            limit={quota.limit}
+            cancelAtPeriodEnd={subscription?.cancelAtPeriodEnd ?? false}
+            currentPeriodEnd={
+              subscription?.currentPeriodEnd?.toISOString() ?? null
+            }
+            stripeConfigured={Boolean(env.STRIPE_SECRET_KEY)}
+          />
         </TabsContent>
 
         <TabsContent value="audit" className="mt-4">
