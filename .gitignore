@@ -46,3 +46,7 @@ next-env.d.ts
 
 # local file storage (dev)
 .data/
+
+# playwright artifacts
+test-results/
+playwright-report/
