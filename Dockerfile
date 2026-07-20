@@ -1,7 +1,8 @@
 # syntax=docker/dockerfile:1
-# Multi-stage build. One image runs both roles:
-#   web    -> node server.js        (Next.js standalone)
-#   worker -> node dist/worker.js   (BullMQ consumers)  [wired at M4/M6]
+# Multi-stage build, two runnable targets:
+#   runner (default) -> node server.js       (Next.js standalone web)
+#   worker           -> npx tsx src/worker.ts (BullMQ consumers; also carries
+#                       the Prisma CLI for `migrate deploy`)
 
 # ---- deps ----
 FROM node:22-alpine AS deps
@@ -18,6 +19,16 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN npx prisma generate
 RUN npm run build
+
+# ---- worker (full deps + sources; shares the codebase with web) ----
+FROM node:22-alpine AS worker
+WORKDIR /app
+ENV NODE_ENV=production
+RUN apk add --no-cache openssl
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+RUN npx prisma generate
+CMD ["npx", "tsx", "src/worker.ts"]
 
 # ---- runner ----
 FROM node:22-alpine AS runner

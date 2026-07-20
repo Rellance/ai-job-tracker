@@ -41,6 +41,18 @@ URL-synced search / filters / sorting / pagination, and a detail page with Overv
 
 ![Application detail](docs/screenshots/application-detail.png)
 
+### AI Workspace — structured runs as background jobs
+
+Six tools with schema-validated output, quota metering, input-hash caching, and results you can attach to applications.
+
+![AI Workspace](docs/screenshots/ai-workspace.png)
+
+### Billing — real Stripe test-mode flow
+
+Hosted Checkout, webhook/return sync, plan-driven AI quotas, cancel at period end.
+
+![Billing](docs/screenshots/billing.png)
+
 ### First-class dark mode
 
 <table>
@@ -62,13 +74,11 @@ URL-synced search / filters / sorting / pagination, and a detail page with Overv
 - 📊 **Analytics dashboard** — success rate, funnel (Applied → Interview → Offer), applications over time, pipeline distribution (Recharts)
 - 📝 **Notes & contacts** — typed pinnable notes (General / Interview / Follow-up), recruiter contacts per application
 - 🧾 **Audit trail** — every significant mutation emits an immutable `ActivityEvent`; one append-only stream powers the activity feed, the audit log, _and_ analytics timing
-
-### In progress / planned (see [roadmap](#-roadmap))
-
-- 📅 **Calendar** — interviews, follow-ups, deadlines, reminders
-- 🤖 **AI Workspace** — JD analyzer, resume gap analysis, match score, cover letter generator (streaming), interview prep — all as background jobs with structured, schema-validated output
-- 📄 **Resume versions** — upload, parse, reuse across AI tools
-- 💳 **Billing** — Stripe (test-mode) with FREE / PRO / ENTERPRISE plans and AI quotas
+- 📅 **Calendar & reminders** — month grid + agenda, interview scheduling with reminder offsets, notification bell fed by a repeatable worker job
+- 🤖 **AI Workspace** — JD analyzer, resume gap, match score, cover letter, interview prep, resume optimization — all as BullMQ background jobs with OpenAI structured outputs, per-plan quotas, input-hash caching, and failure states that never consume credits
+- 📄 **Resume versions** — upload PDF/DOCX/TXT, worker-side text extraction, default version, one-click reuse in AI tools
+- 💳 **Billing** — Stripe test-mode end-to-end: hosted Checkout, signature-verified webhook + checkout-return sync, plan-driven quotas, cancel at period end
+- 🛡️ **Hardening** — Redis rate limiting (AI, uploads, auth brute-force), `/api/health`, Playwright smoke E2E suite
 
 ---
 
@@ -130,9 +140,9 @@ URL-synced search / filters / sorting / pagination, and a detail page with Overv
 - [x] **M1 — Authentication** — register / login / logout, password reset, protected routes, security headers
 - [x] **M2 — Applications & Notes** — CRUD, URL-synced list, detail tabs, notes, contacts, unit tests
 - [x] **M3 — Board, Calendar, Dashboard** — kanban dnd, calendar + interview scheduling, notification bell with reminders, analytics dashboard
-- [ ] **M4 — AI Workspace** — JD analyzer, resume gap, match score, cover letters (streaming), interview prep; BullMQ worker, resume upload + parsing
-- [ ] **M5 — Billing & Hardening** — Stripe test-mode, rate limiting, Sentry, a11y pass, E2E suite
-- [ ] **M6 — Ship** — production deploy guide, final polish
+- [x] **M4 — AI Workspace** — six AI tools as BullMQ jobs with structured outputs, quotas and caching; resume upload + worker-side parsing
+- [x] **M5 — Billing & Hardening** — Stripe test-mode (verified with test cards), rate limiting, health check, Playwright smoke E2E
+- [x] **M6 — Ship** — production build verified, Docker targets for web/worker/migrate, [deployment guide](docs/06-deployment.md)
 
 ---
 
@@ -169,16 +179,22 @@ npm run dev               # http://localhost:3000
 docker compose up --build
 ```
 
-Brings up `web`, `worker`, `postgres`, `redis`, and `mailpit` (dev inbox at http://localhost:8025).
+Brings up `postgres`, `redis`, `mailpit` (dev inbox at http://localhost:8025), runs the one-shot `migrate` service, then starts `web` + `worker`.
+
+### Deploying to production
+
+See **[`docs/06-deployment.md`](docs/06-deployment.md)** — Docker Compose on a VPS, or managed hosts (Railway/Render/Fly) with two services (`runner` and `worker` Dockerfile targets), env matrix, Stripe webhook setup, and a post-deploy checklist.
 
 ### Scripts
 
-| Command                                        | Purpose            |
-| ---------------------------------------------- | ------------------ |
-| `npm run dev`                                  | Dev server         |
-| `npm test`                                     | Vitest unit tests  |
-| `npm run typecheck` / `lint` / `format`        | Code quality       |
-| `npm run db:migrate` / `db:seed` / `db:studio` | Database workflows |
+| Command                                        | Purpose                                |
+| ---------------------------------------------- | -------------------------------------- |
+| `npm run dev`                                  | Dev server                             |
+| `npm run worker`                               | BullMQ worker (AI, parsing, reminders) |
+| `npm test`                                     | Vitest unit tests                      |
+| `npm run test:e2e`                             | Playwright smoke suite (dev server up) |
+| `npm run typecheck` / `lint` / `format`        | Code quality                           |
+| `npm run db:migrate` / `db:seed` / `db:studio` | Database workflows                     |
 
 ---
 

@@ -35,9 +35,23 @@ services:
       - "8025:8025" # web UI
     restart: unless-stopped
 
+  # one-shot: applies committed Prisma migrations, then exits
+  migrate:
+    build:
+      context: .
+      target: worker
+    command: npx prisma migrate deploy
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/aijobtracker?schema=public
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   web:
-    build: .
-    command: node server.js
+    build:
+      context: .
+      target: runner
     env_file: .env
     environment:
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/aijobtracker?schema=public
@@ -45,21 +59,22 @@ services:
     ports:
       - "3000:3000"
     depends_on:
-      postgres:
-        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
       redis:
         condition: service_healthy
 
   worker:
-    build: .
-    command: node dist/worker.js # implemented at M4; image-shared with web
+    build:
+      context: .
+      target: worker
     env_file: .env
     environment:
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/aijobtracker?schema=public
       REDIS_URL: redis://redis:6379
     depends_on:
-      postgres:
-        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
       redis:
         condition: service_healthy
 
